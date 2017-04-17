@@ -1,8 +1,7 @@
 ---
 layout: post
-title: First post!
-image: /img/hello_world.jpeg
-tags: [random, exciting-stuff]
+title: Introduction
+subtitle: Welcome to my blog!
 ---
 
-This is my first post, how exciting!
+This is a placeholder, more content is coming soon.
