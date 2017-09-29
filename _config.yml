@@ -23,7 +23,7 @@ description: open source software for the vfx and animation industry
 
 # List of links in the navigation bar
 navbar-links:
-  Start: "_posts/2017-04-17-introduction.md"
+  Start: "2017-04-17-introduction"
   About: "about"
   #Resources:
   #  - Beautiful Jekyll: "http://deanattali.com/beautiful-jekyll/"
