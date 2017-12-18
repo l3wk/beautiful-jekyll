@@ -146,11 +146,13 @@ bin                etc  lib   media  opt  proc          run   srv   tmp  var
 [vfx-studio-soe:0.1.0@8564ee62f5fa$:/]# 
 ```
 
+# What's Next? 
+
+Excellent! We now have a simple SOE which we can use as a foundation for further development. In the next article, we will extend this basic environment with some additional functionality that we will need.
+
 # References
 
  * James Carr - [Build Docker Images with Packer and Ansible](https://blog.james-carr.org/build-docker-images-with-packer-and-ansible-3f40b734ef4f)
  * Chad Mayfield - [Docker usability, change the prompt](https://chadmayfield.com/2016/06/17/docker-prompt-change/)
 
-# What's Next? 
 
-Excellent! We now have a simple SOE which we can use as a foundation for further development. In the next article, we will extend this basic environment with some additional functionality that we will need.
