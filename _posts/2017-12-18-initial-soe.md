@@ -16,9 +16,9 @@ The SOE we create in this guide will be based on [CentOS](https://www.centos.org
 
 In order to build the SOE image, it will first be necessary to add some additional software packages to the development environment we set up in the previous post. Here is a list of the tools we will need:
 
- - [Packer](https://www.packer.io/) (a tool for building VM images for different platforms using a configuration script)
- - [Ansible](https://www.ansible.com/) (OS provisioning system which packer can invoke to customise a machine image) 
- - [Docker](https://www.docker.com/) (multi-platform container runtime environment)
+ - [Packer](https://www.packer.io/): A tool for building VM images for different platforms using a configuration script.
+ - [Ansible](https://www.ansible.com/): OS provisioning system which packer can invoke to customise a machine image.
+ - [Docker](https://www.docker.com/): Multi-platform container runtime environment.
 
 Download and install these tools using the OS specific instructions relevant to your development environment. Learning resources, such as documentation and tutorials, are available on the websites linked above for each package. If you are unfamiliar with any of these software packages, take some time to read through the documentation and try out some of the tutorials in order to master the basics before you proceed.
 
