@@ -33,6 +33,7 @@ I'll be using packer to automate builds of the machine images that I need for my
 Here is the packer template I've put together as a starting point for the base SOE:
 
 ```json
+{% raw %}
 {
     "variables": {
         "ansible_root": "",
@@ -80,6 +81,7 @@ Here is the packer template I've put together as a starting point for the base S
         }
     ]
 }
+{% endraw %}
 ```
 
 This template uses the docker builder included with packer to create a new docker image using the CentOS 7 base [image](https://hub.docker.com/_/centos/) available on the [Docker Hub](https://hub.docker.com/). The build script will automatically launch the ansible provisioning system to customise the container image. Once the container is built, a post processor will execute in order to tag the new image within an appropriately named docker repository.
@@ -99,7 +101,9 @@ For this initial setup, I've created a single ansible role which will customise 
 The actual prompt definition is retrieved from a configuration setting which is included in the variables file for the role. The definition itself makes use of the image name and version values passed through to the ansible provisioner from the packer template:
 
 ```yaml
+{% raw %}
 ps1: 'PS1="\[$(tput setaf 3)$(tput bold)[\]{{ image_name }}:{{ image_version }}@\\h$:\\w]#\[$(tput sgr0) \]"'
+{% endraw %}
 ```
 
 This will ensure that the bash prompt within the generated machine image includes the name and version number of the build, and that it is displayed in a custom colour (yellow) to differentiate the session from a regular bash session on my workstation (where the prompt is configured to display in green).
