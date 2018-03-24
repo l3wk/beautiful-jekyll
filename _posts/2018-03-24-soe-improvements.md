@@ -97,7 +97,7 @@ l3wk@milla:~$
 
 We see this behaviour because the docker daemon runs under the root user account, and the processes running inside the SOE container are (currently) also executed as root. This highlights a security risk associated with the use of bind mounts (a container can manipulate the host file system), and is a key reason why the use of docker volumes is recommended whenever possible.
 
-One mechanism that we can use to control the user and group that a container is executed under, is to specify the *--user* flag to *docker run* (populate *<uid>:<gid>* in the example below with the ids of your own username and group):
+One mechanism that we can use to control the user and group that a container is executed under, is to specify the *--user* flag to *docker run* (populate `<uid>:<gid>` in the example below with the ids of your own username and group):
 
 ```bash
 l3wk@milla:~$ docker run -it --rm --mount type=bind,source="$(pwd)/tmp",target=/vfx --user <uid>:<gid> l3wk/vfx-studio-soe:0.1.0
