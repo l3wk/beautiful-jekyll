@@ -10,7 +10,7 @@ It's now time to begin setting up some basic infrastructure services for the hom
 
 One of the most foundational components of any IT infrastructure is a centralised user identity management service. The primary purpose of this service is to create and maintain user accounts and authenticate their associated security credentials.
 
-While some excellent open source identity management systems are available (e.g., [FreeIPA](https://www.freeipa.org/) or [OpenLDAP](http://www.openldap.org/)), I was curious about the so-called directory-as-a-service (DaaS) offering from [JumpCloud](https://jumpcloud.com/), and decided that I would like to give it a try first.
+While some excellent open source identity management systems are available ([FreeIPA](https://www.freeipa.org/) or [OpenLDAP](http://www.openldap.org/) for example), I was curious about the so called directory-as-a-service (or DaaS) offering from [JumpCloud](https://jumpcloud.com/), and decided that I would like to give it a try first.
 
 JumpCloud is a commercial product, however a free, entry-level, tier is also available (thus making this service compatible with our project rules). The free tier permits up to ten individual user accounts, which should be more than adequate for our purposes.
 
@@ -28,7 +28,9 @@ I've committed each of the updates described in this article to the [vfx-studio-
 
 # JumpCloud Configuration
 
-Once you've signed up and logged in to the administration console, select the *SYSTEMS* menu entry, press the green *+* button and note down the value of the *x-connect-key* shown in the install command under the *Linux* tab (see the JumpCloud [Agent Deployment](https://support.jumpcloud.com/customer/en/portal/articles/2389062-agent-deployment) knowledge base ([KB](https://en.wikipedia.org/wiki/Knowledge_base)) entry for further details). We'll need this key later on to automate deployment of the client-side JumpCloud agent on any hosts where we want to be able to authenticate our users.
+Once you've signed up and logged in to the administration console, select the *SYSTEMS* menu entry, press the green *+* button and note down the value of the *x-connect-key* shown in the install command under the *Linux* tab (see the JumpCloud agent deployment knowledge base [entry](https://support.jumpcloud.com/customer/en/portal/articles/2389062-agent-deployment) for further details). 
+
+We'll use the *x-connect-key* later on to automate deployment of the client-side JumpCloud agent on any hosts where we want to be able to authenticate our users.
 
 The second task that we need to perform at this point is to set up a test user account. We'll use this account later on to confirm that our hosts are able to interact with the JumpCloud directory service successfully.
 
@@ -80,7 +82,7 @@ jumpcloud_url: "https://kickstart.jumpcloud.com/Kickstart"
 
 Next, the *jumpcloud_key* variable that we need to keep secure is placed inside a separate *vars* file, which I've called *secrets.yml*. This configuration file will be encrypted using [Ansible Vault](https://docs.ansible.com/ansible/latest/user_guide/vault.html). Since Ansible will not automatically load this custom configuration file for us it needs to be referenced manually using the *include_vars* statement shown in the role definition above.
 
-Here is the definition of *secrets.yml* (replace *secret_key* with the JumpCloud *x-connect-key* value that you noted down while setting up your account):
+Here is the definition of *secrets.yml* (replace *secret_key* with the JumpCloud *x-connect-key* that you noted down while setting up your account):
 
 ```yaml
 jumpcloud_key: "secret_key"
@@ -102,20 +104,20 @@ Vault is a feature of ansible that supports the management of sensitive data (su
 
 Setting up ansible vault is a simple process:
 
-    - Create a password file in your home directory (e.g., `touch ~/.vault_pass`) 
-    - Set permissions on the file to ensure only you have access (e.g., `chmod 600 .vault_pass`) 
-    - Add your desired vault encrypt/decrypt password (e.g., use `pwgen` to generate a random password)
-    - Update your `.bash_profile` to export a new environment variable referencing the password file (i.e., `export ANSIBLE_VAULT_PASSWORD_FILE=~/.vault_pass`)
+ * Create a password file in your home directory (e.g., `touch ~/.vault_pass`) 
+ * Set permissions on the file to ensure only you have access (e.g., `chmod 600 .vault_pass`) 
+ * Add your desired vault encrypt/decrypt password (e.g., use `pwgen` to generate a random password)
+ * Update your `.bash_profile` to export a new environment variable referencing the password file (i.e., `export ANSIBLE_VAULT_PASSWORD_FILE=~/.vault_pass`)
 
-We can now use the *ansible-vault* command to securely encrypt *secrets.yml* (note that there's no need to manually specify the *--ask-vault-pass* or *--vault-password-file* flags, as the password file will be automatically picked up from the environment):
+We can now use the `ansible-vault` command to securely encrypt *secrets.yml* (note that there's no need to manually specify the `--ask-vault-pass` or `--vault-password-file` flags, as the password file will be automatically picked up from the environment):
 
 ```bash
 ansible-vault encrypt secrets.yml
 ```
 
-Even though I've encrypted my *secrets.yml* using ansible vault, I've decided not to go ahead and check the file into git along with the other resources from this post. The reason for this is that once the file is up on GitHub, it's pretty much there forever. This could prove problematic later on down the track, should a previously unknown security vulnerability be detected in vault (for example).
+As noted earlier, even though I've encrypted my *secrets.yml* using ansible vault, I've decided not to go ahead and check the file into git along with the other resources from this post. The reason for this is that once the file is up on GitHub, it's pretty much there forever. This could prove problematic later on down the track, should a previously unknown security vulnerability be detected in vault (for example).
 
-An even better solution for the long term would be to set up a local secrets server (e.g., [HashiCorp Vault](https://www.vaultproject.io/)) and use this to separate out any sensitive information from the provisioning scripts entirely (we might take a look at how to set this up in a future article, so stay tuned!).
+An even better solution for the long term would be to set up a local secrets server (such as [HashiCorp Vault](https://www.vaultproject.io/)) and use this to separate out any sensitive information from the provisioning scripts entirely (we might take a look at how to set this up in a future article, so stay tuned!).
 
 # Vagrant Updates
 
@@ -140,7 +142,7 @@ ANSIBLE_ROOT=/home/l3wk/Workspace/vfx-studio-ops/ansible vagrant up
 
 Vagrant will launch the ansible provisioner as before, which will load up the new jumpcloud agent role we've defined and perform the required installation tasks (including automatically decrypting our secrets file when needed).
 
-Once the provisioner has finished running, connect to the virtual machine and run tail on the JumpCloud agent log so we can monitor it for any problems:
+Once the provisioner has finished running, connect to the virtual machine and run `tail` on the JumpCloud agent log so we can monitor it for any problems:
 
 ```bash
 $ vagrant ssh
