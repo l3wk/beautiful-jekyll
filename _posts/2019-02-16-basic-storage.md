@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Storage: Development Environment
+title: Storage - Development Environment
 subtitle: A simple storage solution for the home studio development environment.
 ---
 
