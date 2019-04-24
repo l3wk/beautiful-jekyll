@@ -8,7 +8,7 @@ In the previous article, we looked at how to emulate a simple storage service wi
 
 # Overview
 
-Our ultimate goal for this next round of updates is to implement a new ansible role which we can use to automatically provision a production ready storage client for the home studio project.
+The ultimate goal for this next round of updates is to implement a new ansible role which we can use to automatically provision a production ready storage client for the home studio project.
 
 While the implementation of the proposed storage client role is a simple enough task to complete, we will also need to perform a number of other tasks in order to set up some additional supporting infrastructure: 
 
@@ -25,26 +25,33 @@ Our work this time around requires a range of updates to the studio development 
 Firstly, lets take a look at the installation of some new development tools: 
 
  - [Terraform](https://www.terraform.io/): Provisioning tool for managing automated infrastructure deployments. 
- - [libvirt-terraform-provider](https://github.com/dmacvicar/terraform-provider-libvirt): Terraform provider to provision KVM infrastructure using libvirt.
+ - [terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt): Terraform provider to provision KVM infrastructure using libvirt.
 
 The installation process for terraform is well [documented](https://learn.hashicorp.com/terraform/getting-started/install.html), and should be straightforward to set up, however the libvirt terraform provider will most likely need to be compiled and installed from source.
 
 In this scenario, it may also prove necessary to download and install the latest release of [Go](https://golang.org/), along with the libvirt development headers, which should be available to install using the package manager for your OS.
 
-I encountered a [bug](https://github.com/dmacvicar/terraform-provider-libvirt/issues/561) in the terraform-provider-libvirt master branch, which meant that a VM created with a non-base image volume (as used in the terraform configuration described further below) would fail to start. To get around this issue, I built the 0.5.1 release tag instead, since it was not affected by this bug.
+I encountered a [bug](https://github.com/dmacvicar/terraform-provider-libvirt/issues/561) in the terraform-provider-libvirt master branch, which meant that a VM created with a non-base image volume (as shown in the terraform configuration outlined further below) would fail to start. To get around this issue, I built the 0.5.1 release tag instead, since it was not affected by this bug.
 
 We will also need to set up a more permanent nfs export on the development machine (or local storage server) for the studio clients to connect to. 
 
 On my debian linux devlopment host, the steps required were as follows:
 
- - Install the `nfs-kernel-server` package using `apt-get`
+ - Install the `nfs-kernel-server` package using `apt`
  - Create a directory to serve as the mount point to export: `/srv/nfs/vfx`
  - Add an entry to the exports file to provide access to virtual hosts: `/srv/nfs/vfx  172.16.0.0/24(rw,sync,no_subtree_check)`
  - Restart the local nfs service to pick up the new export
 
 Next, it will be necessary to set up a static [DHCP](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol) reservation to match the locally administered MAC address ([LAA](https://en.wikipedia.org/wiki/MAC_address#Universal_vs._local)) assigned to each of the virtual machine(s) used later on in this post. We use this approach so that it is possible to dynamically configure network interfaces on our VMs but still ensure that we can predict what address a given host will receive.
 
-Lastly, you may also like to create a host entry for the machine in your local address file (or as a static DNS entry on your router, if it supports this feature). This will allow you to refer to your VM via host name rather than IP address.
+Lastly, you may also like to create a host entry for each machine in the */etc/hosts* file on your development machine (or as a static DNS entry on your router, if it supports this feature). 
+
+I've gone ahead and created static DNS entries on my router for the two host names referenced within this post:
+
+ - *vfx-dev-001*
+ - *vfx-nfs-001*
+
+This will allow us to refer to the VMs via host name rather than IP address in the configuration files below, for improved human readability.
 
 # Repository
 
@@ -54,7 +61,7 @@ The branch containing updates from this post is: `20190305_storage_improvements`
 
 # Packer Updates
 
-Our first main task is to update the SOE packer build file to include support for a new image that we can use to spin up virtualised studio hosts under KVM.
+The first main task is to update the SOE packer build file to include support for a new image that we can use to spin up virtualised studio hosts under KVM.
 
 We will start with a standard Centos 7 ISO and make use of a [kickstart](https://en.wikipedia.org/wiki/Kickstart_(Linux)) file (see *packer/vfx-studio-soe/http/ks.cfg* inside the repository) to automate the base install:
 
@@ -128,7 +135,7 @@ The configuration settings contained within this file will instruct [Anaconda](h
 
 Packer will use SSH to connect to the host once the base install has finished in order to perform the various post-installation provisioning tasks.
 
-With the kickstart file ready to go, we can now configure packer to automatically build a libvirt/kvm compatible edition of the SOE. We start, as usual, by declaring some additional variables:
+With the kickstart file ready to go, we can now configure packer to automatically build a KVM edition of the SOE. We start, as usual, by declaring some additional variables:
 
 ```ruby
     ...
@@ -142,9 +149,9 @@ With the kickstart file ready to go, we can now configure packer to automaticall
 
 First, we declare a new variable to contain the path of the ansible vault password file (created in an earlier article), which will be uploaded to the image during the provisioning phase to ensure that ansible is able to decrypt any secrets required by the SOE roles.
 
-Some default settings for the kvm builder are also defined, including a blank user name and password field (to be overridden at runtime), a public SSH key (used to set up password-less authentication for the *ops* user account), and a default volume size (in MB) to apply to the virtual disk which gets created for the new image. 
+Default settings for the KVM builder are also defined, including a blank user name and password field (to be overridden at runtime), a public SSH key (used to set up authentication for the *ops* user account), and a default volume size (in MB) for the virtual disk which gets created for the new image. 
 
-Next, we define a builder for the new image:
+Now, we define a builder for the KVM image:
 
 ```ruby
     ...
@@ -175,7 +182,7 @@ Next, we define a builder for the new image:
     ...
 ```
 
-This builder will automatically download a copy of the Centos 7 minimal installer image, launch a local HTTP server to host the kickstart configuration file, and then execute the installer inside kvm, passing a reference to the URL of the kickstart configuration which will be used to customise the install. 
+This builder will automatically download a copy of the Centos 7 minimal installer, launch a local HTTP server to host the kickstart configuration file, and then execute the installer inside KVM, passing a reference to the URL of the kickstart configuration which will be used to customise the install. 
 
 Lastly, once the base Centos 7 install completes, we will need to run a series of provisioning steps to install the SOE ansible roles, and set up authentication for the *ops* user account. This is done using the following sequence of packer provisioner configurations:
 
@@ -221,19 +228,15 @@ Lastly, once the base Centos 7 install completes, we will need to run a series o
     ...
 ```
 
-This series of packer provisioners will:
+This sequence of packer provisioners will:
 
- - Upload the public SSH key file to `/tmp`.
- - Add the SSH key to the root user account.
- - Upload the ansible vault password file to `/tmp`.
- - Run ansible to provision the SOE, using the specified playbook and roles (which are automatically uploaded to the VM by packer).
- - Remove the SSH key file from the root user account, and delete the ansible vault password file once provisioning is complete.
+ - Upload the public SSH key file to `/tmp`
+ - Add the SSH key to the root user account
+ - Upload the ansible vault password file to `/tmp`
+ - Run ansible to provision the SOE, using the specified playbook and roles (which are automatically uploaded to the VM by packer)
+ - Remove the SSH key file from the root user account, and delete the ansible vault password file once provisioning is complete
 
-When these provisioning steps are complete, packer will power down the VM instance that it has created for the install and write the image out to the output directory defined within the builder configuration.
-
-One final change to note is that each of the provisioning steps have been labeled with the `only` keyword to ensure that they will be executed by the packer qemu builder, and not by the existing docker builder. 
-
-It was also necessary to modify the other docker related rules in a similar way:
+One final change to note is that each of the provisioning steps have been labeled with the `only` keyword to ensure that they will be executed by the packer KVM builder, and not by the existing docker builder. The docker provisioners have also been updated in the same way:
 
 ```ruby
     ...
@@ -241,7 +244,9 @@ It was also necessary to modify the other docker related rules in a similar way:
     ...
 ```
 
-With all of these changes in place, we can now instruct packer to build the new image using the command shown below (launched within the packer/vfx-studio-soe directory):
+When these provisioning steps are complete, packer will power down the VM instance that it has created for the install and write the image out to the output directory defined within the builder configuration.
+
+We can now instruct packer to build the new image using the command shown below (launched within the *packer/vfx-studio-soe* directory):
 
 ```bash
 packer build -only qemu -var "ansible_root=$PWD/../../ansible" -var "kvm_user=root" -var "kvm_pass=changeme" vfx-studio-soe.json
@@ -249,7 +254,7 @@ packer build -only qemu -var "ansible_root=$PWD/../../ansible" -var "kvm_user=ro
 
 # Ansible Updates
 
-The `ansible-local` provisioning step defined in the packer build file above relies on a new ansible role (*ops-user*), to create an *ops* user account within the kvm image. This is a management account that can be used to access and maintain any instances of the virtual machine that get deployed to a runtime environment.
+The `ansible-local` provisioning step defined in the packer build file above relies on a new ansible role (*ops-user*), to create an *ops* user account within the KVM image. This is a management account that can be used to access and maintain any instances of the virtual machine that get deployed to a production or development runtime environment.
 
 Let's take a look at the definition of the *ops-user* role:
 
@@ -273,7 +278,7 @@ Let's take a look at the definition of the *ops-user* role:
     mode: 600
 ```
 
-This new role will create the ops user account if it does not already exist, and will also inject the provided public key into the authorized keys file so that the user account may be accessed securely without requiring manual entry of a password. The *ops* user is also added to the sudoers file so that it is able to execute privileged system commands.
+This new role will create the ops user account if it does not already exist, and will also inject the provided public key into the authorized keys file so that the user account may be accessed securely without requiring the manual entry of a password. The *ops* user is also added to the */etc/sudoers* file so that it is able to execute privileged system commands.
 
 In addition to the creation of the *ops* user account, we also define a second new ansible role (*nfs-client*) which will be responsible for the installation and configuration of a production ready nfs client (i.e., the ultimate goal of this article):
 
@@ -299,7 +304,7 @@ In addition to the creation of the *ops* user account, we also define a second n
     state: mounted 
 ```
 
-This role will install the required software, create a directory to serve as a mount point for the remote filesystem, add a new entry to */etc/fstab*, and finally mount the nfs volume under the defined mount point location.
+This role will install the required software, create a directory to serve as a mount point for the remote filesystem, add a new entry for the filesystem to */etc/fstab*, and finally mount the nfs volume under the defined mount point location.
 
 In addition to the *nfs-client* role definition, we also need to define some associated variables in the accompanying *vars/main.yaml* file as shown below:
 
@@ -323,7 +328,7 @@ Let's take a look at the inventory file first (*ansible/inventories/staging/host
 vfx-dev-001     ansible_user=ops    ansible_become=yes
 ```
 
-This file defines a single host *vfx-dev-001* which ansible will connect to using the *ops* user account. The provisioner will be able to use the *ops* account to become the root user on this machine, due to the sudoers file entry we created previously.
+This file defines a single host *vfx-dev-001* which ansible will connect to using the *ops* user account. The provisioner will be able to use the *ops* account to become the root user on this machine, due to the */etc/sudoers* file entry we created previously.
 
 Here are the contents of the new playbook (*ansible/playbooks/servers.yml*):
 
@@ -333,15 +338,15 @@ Here are the contents of the new playbook (*ansible/playbooks/servers.yml*):
     - nfs-client
 ```
 
-This playbook instructs ansible to deploy the *nfs-client* role on any nodes that appear within the *servers* section of the associated hosts file.
+This playbook instructs ansible to deploy the *nfs-client* role on any nodes that appear within the `servers` section of the associated hosts file.
 
 # Terraform Configuration
 
-The last major objective that we need to address is the implementation of some means to create instances of the kvm SOE image using libvirt. To perform this task, I'll be using terraform, which we installed on the development machine as described at the start of this guide. 
+The last major objective that we need to address is the implementation of some means to create instances of the KVM image using libvirt. To perform this task, I'll be using terraform, which we installed on the development machine as described at the start of this guide. 
 
 The following terraform configuration file (*terraform/studio.tf*), defines the infrastructure for a simple virtual studio, currently comprised of a single development server:
 
-```
+```hcl
 libvirt" {
     uri = "qemu:///system"
 }
@@ -384,7 +389,7 @@ resource "libvirt_domain" "dev" {
 } 
 ```
 
-This configuration makes use of the kvm image we created earlier to spin up the new development server instance, and assigns it a locally administered MAC address (`02:00:00:00:00:01`). The assigned MAC address will be picked up DHCP and matched against the IP address that has been reserved for the *vfx-dev-001* hostname.
+This configuration makes use of the KVM image we created earlier to spin up the new development server instance, and assigns it a locally administered MAC address (`02:00:00:00:00:01`). The assigned MAC address will be picked up DHCP and matched against the IP address that has been reserved for the *vfx-dev-001* hostname.
 
 Here are the terraform commands that we will use to create the virtual studio infrastructure defined above:
 
@@ -404,13 +409,13 @@ terraform destroy -var "image_root=$DEV_WORKSPACE/vfx-studio-ops/packer/vfx-stud
 
 At last, we're finally ready to test everything out! Let's run through the entire process, from start to finish, step by step.
 
-First, we run packer to build the new kvm SOE image:
+First, we run packer to build the new SOE image:
 
 ```bash
 packer build -only qemu -var "ansible_root=$PWD/../../ansible" -var "kvm_user=root" -var "kvm_pass=changeme" vfx-studio-soe.json
 ```
 
-Next, we spin up an instance of the kvm SOE using terraform:
+Next, we spin up an instance of the SOE using terraform:
 
 ```bash
 $ terraform init
