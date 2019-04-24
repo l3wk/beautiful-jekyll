@@ -26,6 +26,8 @@ Download and install these tools using the OS specific instructions relevant to 
 
 I've created the [vfx-studio-ops](https://github.com/l3wk/vfx-studio-ops) GitHub repository to host the software I develop to provision and manage the infrastructure for my home studio. This will also include the resources needed to recreate the SOE described in this guide. You can create a clone or fork of this repository if you wish to duplicate my efforts, otherwise, have a go at setting up an infrastructure repository of your own.
 
+The branch containing updates from this post is `20171211_initial_base_soe`
+
 # Packer Template 
 
 I'll be using packer to automate builds of the machine images that I need for my home studio. I've chosen packer because it is a modern, script based, automated machine image build tool with support for a wide variety of virtualisation platforms and provisioning systems. This should give me the flexibility I desire in order to be able to experiment and switch out different components of the underlying studio infrastructure as requirements change over time.

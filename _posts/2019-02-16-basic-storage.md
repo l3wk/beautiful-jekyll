@@ -22,6 +22,8 @@ Vagrant also provides a feature called [synced folders](https://www.vagrantup.co
 
 As usual, I've committed the updates described in this article to the [vfx-studio-ops](https://github.com/l3wk/vfx-studio-ops) repository on GitHub. You can clone (or pull) from this repository in order to gain access to the latest changes if you wish.
 
+The branch containing updates form this post is: `20190106_basic_storage`
+
 # Vagrant Updates
 
 Here are the necessary *Vagrantfile* modifications:

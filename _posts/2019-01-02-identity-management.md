@@ -24,6 +24,8 @@ Further details about the capabilities of the JumpCloud DaaS product are availab
 
 I've committed each of the updates described in this article to the [vfx-studio-ops](https://github.com/l3wk/vfx-studio-ops) repository on GitHub. You can clone (or pull) from this repository in order to gain access to the latest changes if you wish.
 
+The branch containing updates from this post is: `20180531_identity_management`
+
 *IMPORTANT NOTE: The secrets.yml file described in this article has not been included in the GitHub repository for security reasons. If you wish to make use of my example code, you'll need to add this missing file to your local copy as explained below.*
 
 # JumpCloud Configuration

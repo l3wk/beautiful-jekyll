@@ -29,6 +29,8 @@ When the packages have been installed, ensure that you take the time to configur
 
 I've committed each of the updates described in this article to the [vfx-studio-ops](https://github.com/l3wk/vfx-studio-ops) repository on GitHub. You can clone (or pull) from this repository in order to gain access to the latest changes if you wish.
 
+The branch containing updates from this post is: `20180102_soe_improvements`
+
 # Docker Exploration
 
 Before we start working with Vagrant, libvirt and KVM, let's first take some time to further explore the capabilities of docker. In particular, let's take a look at some interesting "out of the box" features that we can use to immediately extend the capabilities of the containerised SOE we created in the previous post.
